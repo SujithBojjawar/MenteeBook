@@ -1,0 +1,147 @@
+
+.custom-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(15, 23, 42, 0.8);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1055;
+  backdrop-filter: blur(4px);
+  transition: opacity 0.3s ease;
+}
+
+.custom-modal-content {
+  width: 90%;
+  max-width: 500px;
+  background-color: #1e293b;
+  color: #f8fafc;
+  border-radius: 16px;
+  padding: 28px;
+  box-shadow: 0 0 25px rgba(56, 189, 248, 0.25);
+  transform: translateY(40px);
+  opacity: 0;
+  transition: all 0.35s ease;
+}
+
+.form-floating > label {
+  color: #94a3b8 !important;
+  transition: all 0.2s ease;
+  padding-left: 12px;
+}
+
+.form-floating > .form-control,
+.form-floating > .form-select {
+  background-color: #0f172a;
+  border: 1px solid #334155;
+  color: #f1f5f9;
+  border-radius: 10px;
+  font-size: 0.95rem;
+  height: 50px;
+  padding: 12px 14px;
+}
+
+.form-floating > .form-control:focus,
+.form-floating > .form-select:focus {
+  border-color: #38bdf8;
+  box-shadow: 0 0 8px rgba(56, 189, 248, 0.3);
+}
+
+.form-floating > .form-control:focus ~ label,
+.form-floating > .form-select:focus ~ label,
+.form-floating > .form-control:not(:placeholder-shown) ~ label,
+.form-floating > .form-select:not([value=""]) ~ label {
+  transform: translateY(-8px) scale(0.85);
+  color: #38bdf8 !important;
+  font-weight: 500;
+}
+
+.btn-primary {
+  background-color: #38bdf8 !important;
+  color: #fff !important;
+  border: none !important;
+  font-weight: 600;
+  border-radius: 10px;
+  padding: 8px 20px;
+  transition: all 0.25s ease-in-out;
+  box-shadow: 0 0 10px rgba(56, 189, 248, 0.3);
+}
+
+.btn-primary:hover {
+  background-color: #0ea5e9 !important;
+  transform: scale(1.05);
+  box-shadow: 0 0 16px rgba(56, 189, 248, 0.4);
+}
+
+.btn-outline-secondary {
+  border: 1.5px solid #38bdf8 !important;
+  color: #38bdf8 !important;
+  border-radius: 10px;
+  padding: 8px 20px;
+  transition: all 0.25s ease;
+}
+
+.btn-outline-secondary:hover {
+  background-color: #38bdf8 !important;
+  color: #0f172a !important;
+}
+
+.fade-in {
+  animation: fadeIn 0.3s forwards;
+}
+.slide-up {
+  animation: slideUp 0.3s forwards;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes slideUp {
+  from {
+    transform: translateY(40px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+body.light-mode .custom-modal-overlay {
+  background-color: rgba(203, 232, 255, 0.5);
+}
+
+body.light-mode .custom-modal-content {
+  background-color: #ffffff;
+  color: #1e293b;
+  box-shadow: 0 0 25px rgba(56, 189, 248, 0.25);
+}
+
+body.light-mode .form-floating > .form-control,
+body.light-mode .form-floating > .form-select {
+  background-color: #f3f8fd;
+  border: 1.5px solid #cbeafe;
+  color: #1e293b;
+}
+
+body.light-mode .form-floating > label {
+  color: #64748b !important;
+}
+
+body.light-mode .form-floating > .form-control:focus,
+body.light-mode .form-floating > .form-select:focus {
+  border-color: #38bdf8;
+  box-shadow: 0 0 8px rgba(56, 189, 248, 0.3);
+}
+
+body.light-mode .form-floating > .form-control:focus ~ label,
+body.light-mode .form-floating > .form-select:focus ~ label,
+body.light-mode .form-floating > .form-control:not(:placeholder-shown) ~ label,
+body.light-mode .form-floating > .form-select:not([value=""]) ~ label {
+  color: #38bdf8 !important;
+}

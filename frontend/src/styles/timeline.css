@@ -1,0 +1,226 @@
+
+.mentee-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background-color: rgba(15, 23, 42, 0.85);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1055;
+  overflow-y: auto;
+  padding: 20px;
+}
+
+.mentee-modal-box {
+  background-color: #1e293b;
+  color: #f1f5f9;
+  border-radius: 16px;
+  padding: 24px;
+  width: 90%;
+  max-width: 700px;
+  max-height: 90vh;
+  overflow-y: auto;
+  box-shadow: 0 0 20px rgba(56, 189, 248, 0.25);
+  animation: slide-up 0.3s ease-out;
+}
+
+.mentee-info p {
+  margin-bottom: 4px;
+}
+.mentee-info strong {
+  color: #7dd3fc;
+}
+
+.add-remark-section .remark-box {
+  background-color: #0f172a;
+  border: 1px solid #334155;
+  border-radius: 10px;
+  color: #e2e8f0;
+  font-size: 0.95rem;
+  transition: all 0.3s;
+}
+.add-remark-section .remark-box:focus {
+  border-color: #38bdf8;
+  box-shadow: 0 0 8px rgba(56, 189, 248, 0.25);
+}
+
+.timeline-container {
+  position: relative;
+  padding-left: 40px;
+  border-left: 2px solid #38bdf8;
+  margin-top: 10px;
+}
+
+.timeline-item {
+  position: relative;
+  margin-bottom: 25px;
+  animation: fadeInUp 0.4s ease;
+}
+
+.timeline-icon {
+  position: absolute;
+  left: -13px;
+  top: 5px;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  border: 2px solid #1e293b;
+  box-shadow: 0 0 6px rgba(56, 189, 248, 0.4);
+}
+
+.timeline-icon.green {
+  background-color: #16a34a;
+}
+.timeline-icon.red {
+  background-color: #ef4444;
+}
+.timeline-icon.gray {
+  background-color: #6b7280;
+}
+
+.timeline-container {
+  position: relative;
+  padding-left: 40px;
+  border-left: 2px solid #38bdf8;
+  margin-top: 10px;
+}
+
+.timeline-item {
+  position: relative;
+  margin-bottom: 25px;
+  animation: fadeInUp 0.4s ease;
+}
+
+.timeline-icon {
+  position: absolute;
+  left: -13px;
+  top: 5px;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  border: 2px solid #1e293b;
+  box-shadow: 0 0 6px rgba(56, 189, 248, 0.4);
+}
+
+.timeline-icon.green {
+  background-color: #16a34a;
+}
+.timeline-icon.red {
+  background-color: #ef4444;
+}
+.timeline-icon.gray {
+  background-color: #6b7280;
+}
+
+.timeline-content {
+  background-color: #0f172a;
+  padding: 14px 16px;
+  border-radius: 10px;
+  box-shadow: 0 2px 6px rgba(15, 23, 42, 0.5);
+  transition: all 0.3s;
+  color: #f8fafc; 
+}
+
+.timeline-content:hover {
+  transform: scale(1.02);
+  box-shadow: 0 4px 12px rgba(56, 189, 248, 0.25);
+}
+
+.timeline-date {
+  font-size: 0.9rem;
+  color: #a5b4fc; 
+  margin-bottom: 6px;
+  font-weight: 500;
+}
+
+.timeline-status {
+  font-size: 0.95rem;
+  margin-bottom: 6px;
+  color: #3d74bd;
+  font-weight: 600;
+}
+
+.status-text.solved {
+  color: #22c55e;
+}
+.status-text.pending {
+  color: #ef4444;
+}
+.status-text.normal {
+  color: #9ca3af;
+}
+
+.timeline-description {
+  font-size: 1rem;
+  line-height: 1.6;
+  color: #f1f5f9; 
+  font-weight: 500;
+  letter-spacing: 0.2px;
+}
+
+
+body.light-mode .timeline-content {
+  background-color: #f9fcff;
+  color: #1e293b;
+  box-shadow: 0 2px 8px rgba(56, 189, 248, 0.15);
+}
+
+body.light-mode .timeline-content:hover {
+  box-shadow: 0 4px 12px rgba(56, 189, 248, 0.25);
+}
+
+body.light-mode .timeline-date {
+  color: #2563eb;
+}
+
+body.light-mode .timeline-description {
+  color: #111827; 
+  font-weight: 500;
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes slide-up {
+  from {
+    transform: translateY(40px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+
+body.light-mode .mentee-modal-overlay {
+  background-color: rgba(203, 232, 255, 0.5);
+}
+
+body.light-mode .mentee-modal-box {
+  background-color: #ffffff;
+  color: #1e293b;
+  box-shadow: 0 0 20px rgba(56, 189, 248, 0.25);
+}
+
+body.light-mode .timeline-container {
+  border-left: 2px solid #38bdf8;
+}
+
+body.light-mode .timeline-content {
+  background-color: #f3f8fd;
+  color: #1e293b;
+  box-shadow: 0 2px 8px rgba(56, 189, 248, 0.15);
+}
+
+body.light-mode .timeline-content:hover {
+  box-shadow: 0 4px 12px rgba(56, 189, 248, 0.25);
+}
