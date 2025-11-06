@@ -11,7 +11,19 @@ import adminRoutes from "./routes/adminRoutes.js";
 
 const app = express();
 
-app.use(cors());
+import cors from "cors";
+
+app.use(
+  cors({
+    origin: [
+      "http://localhost:5173",
+      "https://menteebook.vercel.app" 
+    ],
+    methods: ["GET", "POST", "PUT", "DELETE"],
+    credentials: true,
+  })
+);
+
 app.use(express.json());
 
 app.get("/", (req, res) => {
