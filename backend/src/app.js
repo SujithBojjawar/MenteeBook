@@ -11,21 +11,16 @@ import adminRoutes from "./routes/adminRoutes.js";
 
 const app = express();
 
-// 🌐 CORS Configuration - FIXED
-const corsOptions = {
+// 🌐 CORS Configuration
+app.use(cors({
  origin: [
- "http://localhost:5173", // ✅ Local development
- "https://mentee-book.vercel.app" // ✅ Deployed frontend on Vercel
+ "http://localhost:5173",
+ "https://mentee-book.vercel.app"
  ],
- methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"], // ✅ Added OPTIONS
+ methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
  allowedHeaders: ["Content-Type", "Authorization"],
- credentials: true,
-};
-
-app.use(cors(corsOptions));
-
-// ✅ Explicitly handle OPTIONS preflight requests
-app.options("*", cors(corsOptions));
+ credentials: true
+}));
 
 // 🧠 Middleware
 app.use(express.json());
@@ -55,7 +50,7 @@ app.use((req, res) => {
  res.status(404).json({ message: "Route not found" });
 });
 
-// 🚨 Global error handler (optional but good for debugging)
+// 🚨 Global error handler
 app.use((err, req, res, next) => {
  console.error("❌ Server Error:", err.stack);
  res.status(500).json({ message: "Internal Server Error", error: err.message });
