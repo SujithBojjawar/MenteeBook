@@ -175,7 +175,7 @@ const Login = () => {
                 exit="exit"
               >
                 <h2 className="text-center text-warning fw-bold mb-4">
-                  Create Account 🧡
+                  Create Account 
                 </h2>
 
                 {error && (
