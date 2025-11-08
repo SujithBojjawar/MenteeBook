@@ -159,8 +159,9 @@ export const addBulkMentees = async (req, res) => {
       return res.status(400).json({ message: "No mentees provided" });
     }
 
-    // 🧹 Clean malformed values (extra quotes or whitespace)
-    const clean = (v) => v?.toString().replace(/^"|"$/g, "").trim();
+    // 🧹 Clean malformed values (remove quotes, spaces)
+    const clean = (v) =>
+      typeof v === "string" ? v.replace(/^"|"$/g, "").trim() : v;
 
     const validMentees = mentees
       .map((m) => ({
@@ -175,7 +176,7 @@ export const addBulkMentees = async (req, res) => {
       return res.status(400).json({ message: "No valid mentees found" });
     }
 
-    // 🧩 Check duplicates
+    // ✅ Avoid duplicates for same mentor
     const existing = await Mentee.find({
       rollNumber: { $in: validMentees.map((m) => m.rollNumber) },
       mentorId,
@@ -192,11 +193,11 @@ export const addBulkMentees = async (req, res) => {
       });
     }
 
-    // 👇 attach mentorId to each mentee
+    // ✅ Attach mentorId and insert
     const menteesWithMentor = newMentees.map((m) => ({ ...m, mentorId }));
-
     const inserted = await Mentee.insertMany(menteesWithMentor);
 
+    // ✅ Update Mentor list
     await Mentor.findByIdAndUpdate(mentorId, {
       $push: { mentees: inserted.map((m) => m._id) },
     });
