@@ -3,8 +3,9 @@ import API from "../services/api";
 import Navbar from "../components/Navbar";
 import MenteeTable from "../components/MenteeTable";
 import AddMenteeModal from "../components/AddMenteeModal";
+import BulkUploadModal from "../components/BulkUploadModal";
 import jsPDF from "jspdf";
-import autoTable from "jspdf-autotable"; 
+import autoTable from "jspdf-autotable";
 import "../styles/theme.css";
 
 export default function MentorDashboard() {
@@ -13,6 +14,7 @@ export default function MentorDashboard() {
   const [stats, setStats] = useState({ total: 0, pending: 0, resolved: 0 });
   const [loading, setLoading] = useState(true);
   const [showAddModal, setShowAddModal] = useState(false);
+  const [showBulkModal, setShowBulkModal] = useState(false);
   const [deleting, setDeleting] = useState(false);
 
   useEffect(() => {
@@ -51,6 +53,7 @@ export default function MentorDashboard() {
     }
   };
 
+  // ✅ Delete all mentees
   const handleDeleteAllMentees = async () => {
     const confirmDelete = window.confirm(
       "⚠️ Are you sure you want to delete all mentees? This action cannot be undone."
@@ -74,6 +77,7 @@ export default function MentorDashboard() {
     }
   };
 
+  // ✅ Download report as PDF
   const handleDownloadPDF = () => {
     if (mentees.length === 0) return alert("No mentees to export.");
 
@@ -165,7 +169,7 @@ export default function MentorDashboard() {
       <Navbar mentor={mentor} />
 
       <div className="container py-4">
-        {}
+        {/* Header */}
         <div className="d-flex flex-wrap justify-content-between align-items-center mb-4">
           <h2 className="fw-bold text-primary mb-3 mb-md-0">
             Welcome, {mentor?.name || "Mentor"} 👋
@@ -181,6 +185,14 @@ export default function MentorDashboard() {
             </button>
 
             <button
+              className="btn btn-outline-success fw-semibold shadow-sm"
+              onClick={() => setShowBulkModal(true)}
+            >
+              <i className="bi bi-upload me-2"></i>
+              Upload CSV
+            </button>
+
+            <button
               className="btn btn-outline-primary fw-semibold shadow-sm"
               onClick={handleDownloadPDF}
             >
@@ -189,7 +201,7 @@ export default function MentorDashboard() {
           </div>
         </div>
 
-        {}
+        {/* Stats */}
         <div className="row g-3 mb-4">
           <div className="col-md-4">
             <div className="card stat-card text-center p-4 rounded-4 shadow-sm">
@@ -213,7 +225,7 @@ export default function MentorDashboard() {
           </div>
         </div>
 
-        {}
+        {/* Mentee List */}
         <div className="card stat-card border-0 p-4 rounded-4 shadow">
           <div className="d-flex justify-content-between align-items-center mb-3">
             <h5 className="stat-title">Mentee List</h5>
@@ -224,12 +236,12 @@ export default function MentorDashboard() {
           ) : (
             <div className="text-center text-secondary py-4">
               <i className="bi bi-person-lines-fill fs-1 mb-3 d-block"></i>
-              <p>No mentees added yet. Click “Add Mentee” to get started.</p>
+              <p>No mentees added yet. Click “Add Mentee” or “Upload CSV”.</p>
             </div>
           )}
         </div>
 
-        {}
+        {/* Delete All Button */}
         {mentees.length > 0 && (
           <div className="text-center mt-4">
             <button
@@ -243,10 +255,16 @@ export default function MentorDashboard() {
         )}
       </div>
 
-      {}
+      {/* Modals */}
       <AddMenteeModal
         show={showAddModal}
         onClose={() => setShowAddModal(false)}
+        onAdded={() => fetchMentees(localStorage.getItem("token"))}
+      />
+
+      <BulkUploadModal
+        show={showBulkModal}
+        onClose={() => setShowBulkModal(false)}
         onAdded={() => fetchMentees(localStorage.getItem("token"))}
       />
     </div>

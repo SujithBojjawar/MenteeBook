@@ -13,40 +13,51 @@ export default function AddMenteeModal({ show, onClose, onAdded }) {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+
+    if (!name.trim() || !rollNumber.trim()) {
+      alert("⚠️ Please fill in all fields.");
+      return;
+    }
+
     setLoading(true);
     try {
       const token = localStorage.getItem("token");
-      await API.post(
+      const res = await API.post(
         "/mentor/add-mentee",
-        { rollNumber, name, department, year },
+        { rollNumber: rollNumber.trim(), name: name.trim(), department, year },
         { headers: { Authorization: `Bearer ${token}` } }
       );
-      alert("✅ Mentee added successfully!");
-      onAdded();
-      onClose();
+
+      alert(`✅ Mentee "${res.data?.newMentee?.name || name}" added successfully!`);
+      onAdded(); // refresh list
+      onClose(); // close modal
+      setRollNumber("");
+      setName("");
+      setDepartment("CSE");
+      setYear("1");
     } catch (err) {
-      console.error("Error adding mentee:", err);
-      alert("❌ Failed to add mentee.");
+      console.error("❌ Error adding mentee:", err);
+
+      if (err.response?.data?.message?.includes("already exists")) {
+        alert("⚠️ A mentee with this roll number already exists.");
+      } else {
+        alert("❌ Failed to add mentee. Please try again.");
+      }
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div
-      className="custom-modal-overlay fade-in"
-      onClick={onClose}
-    >
+    <div className="custom-modal-overlay fade-in" onClick={onClose}>
       <div
         className="custom-modal-content slide-up"
         onClick={(e) => e.stopPropagation()}
       >
-        <h4 className="fw-bold suit-accent mb-3 text-center">
-          Add New Mentee
-        </h4>
+        <h4 className="fw-bold suit-accent mb-3 text-center">Add New Mentee</h4>
 
         <form onSubmit={handleSubmit}>
-          {}
+          {/* Roll Number */}
           <div className="form-floating mb-3">
             <input
               type="text"
@@ -54,13 +65,13 @@ export default function AddMenteeModal({ show, onClose, onAdded }) {
               className="form-control"
               placeholder="Roll Number"
               value={rollNumber}
-              onChange={(e) => setRollNumber(e.target.value)}
+              onChange={(e) => setRollNumber(e.target.value.toUpperCase())}
               required
             />
             <label htmlFor="rollNumber">Roll Number</label>
           </div>
 
-          {}
+          {/* Name */}
           <div className="form-floating mb-3">
             <input
               type="text"
@@ -74,7 +85,7 @@ export default function AddMenteeModal({ show, onClose, onAdded }) {
             <label htmlFor="name">Full Name</label>
           </div>
 
-          {}
+          {/* Department */}
           <div className="form-floating mb-3">
             <select
               id="department"
@@ -90,7 +101,7 @@ export default function AddMenteeModal({ show, onClose, onAdded }) {
             <label htmlFor="department">Department</label>
           </div>
 
-          {}
+          {/* Year */}
           <div className="form-floating mb-4">
             <select
               id="year"
@@ -107,7 +118,7 @@ export default function AddMenteeModal({ show, onClose, onAdded }) {
             <label htmlFor="year">Year</label>
           </div>
 
-          {}
+          {/* Buttons */}
           <div className="d-flex justify-content-end gap-3 mt-4">
             <button
               type="button"
