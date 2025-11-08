@@ -150,7 +150,6 @@ export const updateIssueStatus = async (req, res) => {
   }
 };
 
-// ✅ Bulk upload mentees (CSV Upload)
 export const addBulkMentees = async (req, res) => {
   try {
     const { mentees } = req.body;
@@ -160,14 +159,23 @@ export const addBulkMentees = async (req, res) => {
       return res.status(400).json({ message: "No mentees provided" });
     }
 
-    const validMentees = mentees.filter(
-      (m) => m.rollNumber && m.name && m.department && m.year
-    );
+    // 🧹 Clean malformed values (extra quotes or whitespace)
+    const clean = (v) => v?.toString().replace(/^"|"$/g, "").trim();
+
+    const validMentees = mentees
+      .map((m) => ({
+        rollNumber: clean(m.rollNumber),
+        name: clean(m.name),
+        department: clean(m.department),
+        year: clean(m.year),
+      }))
+      .filter((m) => m.rollNumber && m.name && m.department && m.year);
 
     if (validMentees.length === 0) {
       return res.status(400).json({ message: "No valid mentees found" });
     }
 
+    // 🧩 Check duplicates
     const existing = await Mentee.find({
       rollNumber: { $in: validMentees.map((m) => m.rollNumber) },
       mentorId,
@@ -179,19 +187,21 @@ export const addBulkMentees = async (req, res) => {
     );
 
     if (newMentees.length === 0) {
-      return res.status(400).json({ message: "All mentees already exist for this mentor" });
+      return res.status(400).json({
+        message: "All mentees already exist for this mentor",
+      });
     }
 
+    // 👇 attach mentorId to each mentee
     const menteesWithMentor = newMentees.map((m) => ({ ...m, mentorId }));
+
     const inserted = await Mentee.insertMany(menteesWithMentor);
 
     await Mentor.findByIdAndUpdate(mentorId, {
       $push: { mentees: inserted.map((m) => m._id) },
     });
 
-    console.log(`✅ Bulk upload success: ${inserted.length} added`);
     res.status(201).json({
-      success: true,
       message: `${inserted.length} mentees added successfully!`,
       added: inserted.length,
       skipped: existingRolls.length,
@@ -199,7 +209,6 @@ export const addBulkMentees = async (req, res) => {
   } catch (err) {
     console.error("❌ Error in addBulkMentees:", err);
     res.status(500).json({
-      success: false,
       message: "Internal Server Error",
       error: err.message,
     });
