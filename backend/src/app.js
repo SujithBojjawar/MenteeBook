@@ -12,24 +12,22 @@ import adminRoutes from "./routes/adminRoutes.js";
 const app = express();
 
 // 🌐 CORS Configuration
-app.use(
-  cors({
-    origin: [
-      "http://localhost:5173",           // ✅ Local development
-      "https://menteebook.vercel.app"    // ✅ Deployed frontend on Vercel
-    ],
-    methods: ["GET", "POST", "PUT", "DELETE"],
-    allowedHeaders: ["Content-Type", "Authorization"],
-    credentials: true, // allow cookies or tokens
-  })
-);
+app.use(cors({
+ origin: [
+ "http://localhost:5173",
+ "https://mentee-book.vercel.app"
+ ],
+ methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
+ allowedHeaders: ["Content-Type", "Authorization"],
+ credentials: true
+}));
 
 // 🧠 Middleware
 app.use(express.json());
 
 // 🏠 Health check route
 app.get("/", (req, res) => {
-  res.status(200).send("🚀 Mentor–Mentee Management API is running...");
+ res.status(200).send("🚀 Mentor–Mentee Management API is running...");
 });
 
 // 🔐 Public routes (no auth required)
@@ -49,13 +47,13 @@ app.use("/api/v1/admin", verifyToken, isAdmin, adminRoutes);
 
 // ⚠️ 404 handler
 app.use((req, res) => {
-  res.status(404).json({ message: "Route not found" });
+ res.status(404).json({ message: "Route not found" });
 });
 
-// 🚨 Global error handler (optional but good for debugging)
+// 🚨 Global error handler
 app.use((err, req, res, next) => {
-  console.error("❌ Server Error:", err.stack);
-  res.status(500).json({ message: "Internal Server Error", error: err.message });
+ console.error("❌ Server Error:", err.stack);
+ res.status(500).json({ message: "Internal Server Error", error: err.message });
 });
 
 export default app;
