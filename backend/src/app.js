@@ -14,7 +14,8 @@ app.use(
   cors({
     origin: [
       "http://localhost:5173",          
-      "https://menteebook.vercel.app",  
+      "https://menteebook.vercel.app",
+      "https://mentee-book-oxm6.vercel.app",
     ],
     methods: ["GET", "POST", "PUT", "DELETE"],
     allowedHeaders: ["Content-Type", "Authorization"],
