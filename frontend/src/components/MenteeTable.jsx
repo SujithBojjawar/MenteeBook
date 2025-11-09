@@ -5,9 +5,9 @@ export default function MenteeTable({ mentees, onDelete }) {
   const [selectedMentee, setSelectedMentee] = useState(null);
 
   return (
-    <div className="table-responsive mt-3 mentee-table-container">
-      <table className="table mentee-table align-middle text-center mb-0">
-        <thead>
+    <div className="table-responsive mentee-table-container">
+      <table className="table table-hover align-middle text-center mb-0 mentee-table shadow-sm">
+        <thead className="table-light">
           <tr>
             <th>#</th>
             <th>Roll No</th>
@@ -22,7 +22,7 @@ export default function MenteeTable({ mentees, onDelete }) {
           {mentees?.length > 0 ? (
             mentees.map((mentee, index) => {
               const latestIssue =
-                mentee.issues && mentee.issues.length > 0
+                mentee.issues?.length > 0
                   ? mentee.issues[mentee.issues.length - 1]
                   : null;
 
@@ -32,23 +32,23 @@ export default function MenteeTable({ mentees, onDelete }) {
 
               return (
                 <tr key={mentee._id}>
-                  <td className="fw-semibold">{index + 1}</td>
+                  <td>{index + 1}</td>
                   <td className="fw-semibold">{mentee.rollNumber}</td>
                   <td>{mentee.name}</td>
-                  <td className="text-info">{mentee.department}</td>
-                  <td className="text-primary">{mentee.year}</td>
+                  <td>{mentee.department}</td>
+                  <td>{mentee.year}</td>
                   <td className={`status-cell ${statusClass}`}>
                     {latestIssue ? latestIssue.status.toUpperCase() : "NORMAL"}
                   </td>
-                  <td className="text-center d-flex justify-content-center gap-2">
+                  <td>
                     <button
-                      className="btn btn-sm btn-outline-primary fw-semibold d-inline-flex align-items-center gap-1"
+                      className="btn btn-sm btn-outline-primary me-2"
                       onClick={() => setSelectedMentee(mentee)}
                     >
                       <i className="bi bi-eye-fill"></i> View
                     </button>
                     <button
-                      className="btn btn-sm btn-outline-danger fw-semibold d-inline-flex align-items-center gap-1"
+                      className="btn btn-sm btn-outline-danger"
                       onClick={() => onDelete(mentee._id)}
                     >
                       <i className="bi bi-trash3-fill"></i> Delete
@@ -59,7 +59,7 @@ export default function MenteeTable({ mentees, onDelete }) {
             })
           ) : (
             <tr>
-              <td colSpan="7" className="py-4 text-secondary">
+              <td colSpan="7" className="py-4 text-muted">
                 No mentees yet ✨
               </td>
             </tr>

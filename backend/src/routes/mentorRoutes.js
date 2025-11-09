@@ -7,9 +7,9 @@ import {
   addIssue,
   updateIssueStatus,
   addBulkMentees,
+  generateMentorReport, // ✅ Added
 } from "../controllers/mentorController.js";
 import { verifyToken } from "../middleware/authMiddleware.js";
-
 
 const router = express.Router();
 
@@ -20,4 +20,8 @@ router.delete("/delete-all-mentees", verifyToken, deleteAllMentees);
 router.post("/add-issue/:menteeId", verifyToken, addIssue);
 router.put("/update-issue/:issueId", verifyToken, updateIssueStatus);
 router.post("/add-bulk-mentees", verifyToken, addBulkMentees);
+
+// 🆕 PDF route
+router.get("/generate-report", verifyToken, generateMentorReport);
+
 export default router;

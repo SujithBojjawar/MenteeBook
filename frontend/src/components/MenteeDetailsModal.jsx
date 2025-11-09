@@ -1,293 +1,125 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import API from "../services/api";
-import jsPDF from "jspdf";
-import autoTable from "jspdf-autotable"; 
 import "../styles/theme.css";
 
-function MenteeDetailsModal({ show, onClose, mentee, onUpdate }) {
-  const [status, setStatus] = useState(mentee?.issues?.[0]?.status || "pending");
-  const [newRemark, setNewRemark] = useState("");
+export default function MenteeDetailsModal({ show, onClose, mentee, onUpdate }) {
+  const [issueText, setIssueText] = useState("");
   const [updating, setUpdating] = useState(false);
-  const [remarks, setRemarks] = useState(mentee?.issues || []);
-
-  useEffect(() => {
-    if (mentee?.issues) {
-      setRemarks(mentee.issues);
-      if (mentee.issues[0]) {
-        setStatus(mentee.issues[0].status || "pending");
-      }
-    }
-  }, [mentee]);
 
   if (!show || !mentee) return null;
 
-  const issue = mentee?.issues?.[0];
+  const handleAddIssue = async (e) => {
+    e.preventDefault();
+    if (!issueText.trim()) return alert("Please enter issue description.");
 
-  const handleStatusChange = async () => {
-    if (!issue?._id) return;
+    try {
+      const token = localStorage.getItem("token");
+      await API.post(
+        `/mentor/add-issue/${mentee._id}`,
+        { description: issueText },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      setIssueText("");
+      onUpdate();
+    } catch (error) {
+      console.error("❌ Error adding issue:", error);
+      alert("Failed to add issue.");
+    }
+  };
+
+  const handleStatusChange = async (issueId, newStatus) => {
     setUpdating(true);
     try {
       const token = localStorage.getItem("token");
       await API.put(
-        `/mentor/update-issue/${issue._id}`,
-        { status: status === "pending" ? "solved" : "pending" },
+        `/mentor/update-issue/${issueId}`,
+        { status: newStatus },
         { headers: { Authorization: `Bearer ${token}` } }
       );
-      setStatus(status === "pending" ? "solved" : "pending");
       onUpdate();
     } catch (err) {
       console.error("❌ Error updating issue:", err);
-      alert("Failed to update issue status.");
+      alert("Failed to update status.");
     } finally {
       setUpdating(false);
-    }
-  };
-
-  const handleAddRemark = async () => {
-    if (!newRemark.trim()) return alert("Please enter a remark or follow-up.");
-    setUpdating(true);
-    try {
-      const token = localStorage.getItem("token");
-      const res = await API.post(
-        `/mentor/add-issue/${mentee._id}`,
-        { description: newRemark },
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
-      setRemarks((prev) => [...prev, res.data.newIssue]);
-      setNewRemark("");
-      onUpdate();
-    } catch (err) {
-      console.error("❌ Error adding remark:", err);
-      alert("Failed to add remark.");
-    } finally {
-      setUpdating(false);
-    }
-  };
-
-  const handleRemarkStatusChange = async (issueId, currentStatus) => {
-    try {
-      const token = localStorage.getItem("token");
-      const res = await API.put(
-        `/mentor/update-issue/${issueId}`,
-        { status: currentStatus === "pending" ? "solved" : "pending" },
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
-      setRemarks((prev) =>
-        prev.map((issue) =>
-          issue._id === issueId
-            ? { ...issue, status: res.data.updated.status }
-            : issue
-        )
-      );
-      onUpdate();
-    } catch (err) {
-      console.error("❌ Error updating remark status:", err);
-      alert("Failed to update remark status.");
-    }
-  };
-
-  const handleDownloadMenteePDF = () => {
-    if (!mentee) return;
-
-    try {
-      const { name, rollNumber, department, year } = mentee;
-      const doc = new jsPDF("p", "pt", "a4"); 
-      const titleY = 40;
-
-      doc.setFont("helvetica", "bold");
-      doc.setFontSize(18);
-      doc.text("Mentor–Mentee Report", 40, titleY);
-
-      doc.setFontSize(12);
-      doc.setFont("helvetica", "normal");
-      doc.text(`Name: ${name}`, 40, titleY + 25);
-      doc.text(`Roll No: ${rollNumber}`, 40, titleY + 45);
-      doc.text(`Department: ${department}`, 300, titleY + 25);
-      doc.text(`Year: ${year}`, 300, titleY + 45);
-      doc.text(`Generated on: ${new Date().toLocaleString()}`, 40, titleY + 65);
-
-      doc.setDrawColor(56, 189, 248);
-      doc.setLineWidth(1);
-      doc.line(40, titleY + 75, 550, titleY + 75);
-
-      if (remarks && remarks.length > 0) {
-        const rows = remarks.map((issue, i) => [
-          i + 1,
-          issue.description || "No description provided",
-          issue.status ? issue.status.toUpperCase() : "N/A",
-          new Date(issue.updatedAt || issue.createdAt).toLocaleString(),
-        ]);
-
-        autoTable(doc, {
-          startY: titleY + 95,
-          head: [["#", "Remark / Follow-up", "Status", "Date"]],
-          body: rows,
-          theme: "grid",
-          headStyles: {
-            fillColor: [56, 189, 248],
-            textColor: 255,
-            fontStyle: "bold",
-            halign: "center",
-          },
-          styles: {
-            fontSize: 10,
-            cellPadding: 6,
-            valign: "middle",
-          },
-          bodyStyles: {
-            textColor: [33, 37, 41],
-          },
-          alternateRowStyles: { fillColor: [245, 249, 255] },
-          margin: { left: 40, right: 40 },
-        });
-      } else {
-        doc.setFontSize(12);
-        doc.text("No remarks or issues found for this mentee.", 40, titleY + 110);
-      }
-
-      doc.save(`${name}_MentorMentee_Report.pdf`);
-    } catch (err) {
-      console.error("❌ Error generating PDF:", err);
-      alert("Failed to generate PDF. See console for details.");
     }
   };
 
   return (
-    <div className="mentee-modal-overlay fade-in" onClick={onClose}>
-      <div
-        className="mentee-modal-box slide-up text-light"
-        onClick={(e) => e.stopPropagation()}
-        style={{
-          backgroundColor: "var(--modal-bg, #1e293b)",
-          borderRadius: "16px",
-          padding: "25px",
-          width: "90%",
-          maxWidth: "720px",
-          maxHeight: "90vh",
-          overflowY: "auto",
-          boxShadow: "0 8px 40px rgba(56,189,248,0.15)",
-        }}
-      >
-        {}
-        <div className="d-flex justify-content-between align-items-center mb-3">
-          <h4 className="fw-bold suit-accent mb-0">{mentee.name}'s Details</h4>
-          <button className="btn-close btn-close-white" onClick={onClose}></button>
+    <div className="modal-overlay d-flex align-items-center justify-content-center fade show">
+      <div className="mentee-modal card shadow-lg border-0">
+        <div className="modal-header border-0 pb-0">
+          <h4 className="fw-bold text-primary mb-0">
+            {mentee.name} <small className="text-muted">({mentee.rollNumber})</small>
+          </h4>
+          <button type="button" className="btn-close" onClick={onClose}></button>
         </div>
 
-        {}
-        <div className="mb-3">
-          <p>
-            <strong>Roll No:</strong>{" "}
-            <span className="text-info">{mentee.rollNumber}</span>
-          </p>
-          <p>
-            <strong>Department:</strong>{" "}
-            <span className="text-info">{mentee.department}</span>
-          </p>
-          <p>
-            <strong>Year:</strong>{" "}
-            <span className="text-primary">{mentee.year}</span>
-          </p>
-          <p>
-            <strong>Status:</strong>{" "}
-            <span
-              className={`fw-semibold ${
-                status === "solved"
-                  ? "text-success"
-                  : status === "pending"
-                  ? "text-danger"
-                  : "text-secondary"
-              }`}
-            >
-              {status.toUpperCase()}
-            </span>
-          </p>
-        </div>
+        <div className="modal-body">
+          <div className="mb-3">
+            <p className="mb-1">
+              <strong>Department:</strong> {mentee.department}
+            </p>
+            <p className="mb-1">
+              <strong>Year:</strong> {mentee.year}
+            </p>
+          </div>
 
-        {}
-        <div className="mb-4">
-          <h6 className="fw-bold text-info mb-2">Add Follow-up / Remark</h6>
-          <textarea
-            className="form-control mb-2"
-            rows="3"
-            value={newRemark}
-            onChange={(e) => setNewRemark(e.target.value)}
-            placeholder="Write a follow-up or note..."
-            style={{
-              resize: "vertical",
-              backgroundColor: "#0f172a",
-              border: "1px solid #334155",
-              borderRadius: "10px",
-              color: "#f8fafc",
-            }}
-          />
-          <button
-            className="btn btn-outline-primary fw-semibold px-4"
-            onClick={handleAddRemark}
-            disabled={updating}
-          >
-            {updating ? "Saving..." : "Add Remark"}
-          </button>
-        </div>
+          <hr />
 
-        {}
-        <div className="mb-4">
-          <h6 className="fw-bold text-info mb-3">Past Remarks / Follow-ups</h6>
-          {remarks && remarks.length > 0 ? (
-            <div className="timeline-container">
-              {remarks.map((issue, index) => (
-                <div key={issue._id || index} className="timeline-item">
+          <h5 className="fw-semibold text-primary mb-3">Follow-up Timeline</h5>
+
+          <div className="timeline-container">
+            {mentee.issues && mentee.issues.length > 0 ? (
+              mentee.issues.map((issue, idx) => (
+                <div className="timeline-item mb-3" key={idx}>
                   <div className="timeline-dot"></div>
                   <div className="timeline-content">
-                    <p className="fw-semibold mb-1">{issue.description}</p>
-                    <small className="text-secondary">
-                      {new Date(issue.updatedAt || issue.createdAt).toLocaleString()}
-                    </small>
-                    <div className="mt-2">
+                    <div className="d-flex justify-content-between align-items-center">
+                      <p className="fw-semibold mb-1">{issue.description}</p>
                       <select
+                        className={`form-select form-select-sm status-dropdown ${
+                          issue.status === "solved" ? "status-solved" : "status-pending"
+                        }`}
                         value={issue.status}
-                        onChange={() =>
-                          handleRemarkStatusChange(issue._id, issue.status)
+                        onChange={(e) =>
+                          handleStatusChange(issue._id, e.target.value)
                         }
-                        className="form-select form-select-sm w-auto"
-                        style={{
-                          backgroundColor: "#0f172a",
-                          color: "#f8fafc",
-                          border: "1px solid #334155",
-                        }}
+                        disabled={updating}
                       >
                         <option value="pending">Pending</option>
                         <option value="solved">Solved</option>
                       </select>
                     </div>
+                    <small className="text-muted">
+                      {new Date(issue.createdAt).toLocaleString()}
+                    </small>
                   </div>
                 </div>
-              ))}
-            </div>
-          ) : (
-            <p className="text-secondary">No remarks added yet.</p>
-          )}
-        </div>
+              ))
+            ) : (
+              <p className="text-muted">No issues added yet.</p>
+            )}
+          </div>
 
-        {}
-        <div className="d-flex justify-content-end gap-3 mt-4">
-          <button
-            className="btn btn-outline-primary px-4 fw-semibold"
-            onClick={handleDownloadMenteePDF}
-          >
-            <i className="bi bi-download me-2"></i> Download Report
-          </button>
-          <button
-            className="btn btn-outline-secondary px-4 fw-semibold"
-            onClick={onClose}
-            disabled={updating}
-          >
-            Close
-          </button>
+          <form onSubmit={handleAddIssue} className="mt-4">
+            <textarea
+              className="form-control mb-3"
+              rows="3"
+              placeholder="Add a new follow-up or remark..."
+              value={issueText}
+              onChange={(e) => setIssueText(e.target.value)}
+            ></textarea>
+            <button
+              type="submit"
+              className="btn btn-primary w-100 fw-semibold"
+              disabled={updating}
+            >
+              {updating ? "Updating..." : "Add Issue"}
+            </button>
+          </form>
         </div>
       </div>
     </div>
   );
 }
-
-export default MenteeDetailsModal;

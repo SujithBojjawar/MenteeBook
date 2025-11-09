@@ -1,6 +1,6 @@
 import React, { useState } from "react";
+import Papa from "papaparse";
 import API from "../services/api";
-import "../components/AddMenteeModal.css"; // reuse your existing modal styles
 
 export default function BulkUploadModal({ show, onClose, onUploaded }) {
   const [file, setFile] = useState(null);
@@ -8,100 +8,113 @@ export default function BulkUploadModal({ show, onClose, onUploaded }) {
 
   if (!show) return null;
 
-  // Handles CSV file upload
+  const handleFileChange = (e) => {
+    setFile(e.target.files[0]);
+  };
+
   const handleUpload = async () => {
-    try {
-      if (!file) {
-        alert("⚠️ Please select a CSV file first!");
-        return;
-      }
-
-      const text = await file.text();
-      const rows = text
-        .split("\n")
-        .map((r) => r.trim())
-        .filter((r) => r.length > 0);
-
-      const mentees = [];
-
-      // Skip header row automatically
-      for (let i = 1; i < rows.length; i++) {
-        const cols = rows[i].split(",").map((c) => c.trim());
-        if (cols.length >= 4) {
-          mentees.push({
-            rollNumber: cols[0],
-            name: cols[1],
-            department: cols[2],
-            year: cols[3],
-          });
-        }
-      }
-
-      if (mentees.length === 0) {
-        alert(
-          "⚠️ Invalid CSV format.\nExpected columns:\nrollNumber,name,department,year"
-        );
-        return;
-      }
-
-      setLoading(true);
-      const token = localStorage.getItem("token");
-
-      await API.post(
-        "/mentor/add-bulk-mentees",
-        { mentees },
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
-
-      alert(`✅ Successfully added ${mentees.length} mentees!`);
-      onUploaded();
-      onClose();
-    } catch (err) {
-      console.error("❌ Error uploading mentees:", err);
-      alert("❌ Failed to upload CSV. Please check the file format.");
-    } finally {
-      setLoading(false);
+    if (!file) {
+      alert("Please select a CSV file.");
+      return;
     }
+
+    setLoading(true);
+    Papa.parse(file, {
+      header: true,
+      skipEmptyLines: true,
+      complete: async (result) => {
+        try {
+          let mentees = result.data.map((m) => {
+            const raw = Object.values(m).join(" ").trim();
+
+            // 🧹 Handle bad CSVs where everything is in one column (like your case)
+            const parts = raw.split(/[\s,]+/).filter(Boolean);
+
+            if (parts.length >= 4) {
+              return {
+                rollNumber: parts[0].replace(/"/g, "").trim(),
+                name: parts.slice(1, -2).join(" ").replace(/"/g, "").trim(),
+                department: parts[parts.length - 2].replace(/"/g, "").trim(),
+                year: parts[parts.length - 1].replace(/"/g, "").trim(),
+              };
+            } else {
+              // Proper CSV (normal columns)
+              return {
+                rollNumber: m.rollNumber?.replace(/"/g, "").trim(),
+                name: m.name?.replace(/"/g, "").trim(),
+                department: m.department?.replace(/"/g, "").trim(),
+                year: m.year?.replace(/"/g, "").trim(),
+              };
+            }
+          });
+
+          // Remove invalid rows
+          mentees = mentees.filter(
+            (m) => m.rollNumber && m.name && m.department && m.year
+          );
+
+          if (mentees.length === 0) {
+            alert("No valid mentee data found in the file.");
+            setLoading(false);
+            return;
+          }
+
+          const token = localStorage.getItem("token");
+          await API.post(
+            "/mentor/add-bulk-mentees",
+            { mentees },
+            { headers: { Authorization: `Bearer ${token}` } }
+          );
+
+          alert("✅ Mentees uploaded successfully!");
+          onUploaded?.(); // ✅ only call if function exists
+          onClose();
+        } catch (err) {
+          console.error("❌ Error uploading mentees:", err);
+          alert("Failed to upload CSV. Please check the file format.");
+        } finally {
+          setLoading(false);
+        }
+      },
+      error: (err) => {
+        console.error("❌ CSV Parse Error:", err);
+        alert("Error reading CSV file.");
+        setLoading(false);
+      },
+    });
   };
 
   return (
-    <div className="custom-modal-overlay fade-in" onClick={onClose}>
+    <div
+      className="custom-modal-overlay fade-in"
+      onClick={onClose}
+    >
       <div
         className="custom-modal-content slide-up"
         onClick={(e) => e.stopPropagation()}
       >
         <h4 className="fw-bold suit-accent mb-3 text-center">
-          Upload Mentees from CSV
+          Upload Mentees via CSV
         </h4>
 
-        <div className="mb-3">
-          <input
-            type="file"
-            accept=".csv"
-            className="form-control"
-            onChange={(e) => setFile(e.target.files[0])}
-          />
-          <small className="text-muted">
-            Format: <code>rollNumber,name,department,year</code>
-          </small>
-        </div>
+        <input
+          type="file"
+          accept=".csv"
+          className="form-control mb-3"
+          onChange={handleFileChange}
+        />
 
-        <div className="d-flex justify-content-end gap-3 mt-4">
+        <div className="text-center mt-4">
           <button
-            type="button"
-            className="btn btn-outline-secondary fw-semibold px-4"
+            className="btn btn-secondary me-3 px-4"
             onClick={onClose}
             disabled={loading}
           >
             Cancel
           </button>
+
           <button
-            type="button"
-            className="btn btn-primary fw-semibold px-4"
+            className="btn btn-primary px-4"
             onClick={handleUpload}
             disabled={loading}
           >

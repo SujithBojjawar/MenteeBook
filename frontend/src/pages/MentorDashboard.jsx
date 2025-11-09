@@ -4,18 +4,18 @@ import Navbar from "../components/Navbar";
 import MenteeTable from "../components/MenteeTable";
 import AddMenteeModal from "../components/AddMenteeModal";
 import BulkUploadModal from "../components/BulkUploadModal";
-import jsPDF from "jspdf";
-import autoTable from "jspdf-autotable";
 import "../styles/theme.css";
 
 export default function MentorDashboard() {
   const [mentor, setMentor] = useState(null);
   const [mentees, setMentees] = useState([]);
+  const [filteredMentees, setFilteredMentees] = useState([]);
   const [stats, setStats] = useState({ total: 0, pending: 0, resolved: 0 });
   const [loading, setLoading] = useState(true);
   const [showAddModal, setShowAddModal] = useState(false);
-  const [showBulkUpload, setShowBulkUpload] = useState(false);
+  const [showBulkModal, setShowBulkModal] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [searchTerm, setSearchTerm] = useState("");
 
   useEffect(() => {
     const token = localStorage.getItem("token");
@@ -41,6 +41,7 @@ export default function MentorDashboard() {
       });
 
       setMentees(data);
+      setFilteredMentees(data);
       setStats({
         total: data.length,
         pending: pendingCount,
@@ -53,12 +54,25 @@ export default function MentorDashboard() {
     }
   };
 
+  const handleSearch = (e) => {
+    const term = e.target.value.toLowerCase();
+    setSearchTerm(term);
+    if (!term.trim()) setFilteredMentees(mentees);
+    else {
+      const filtered = mentees.filter(
+        (m) =>
+          m.name.toLowerCase().includes(term) ||
+          m.rollNumber.toString().toLowerCase().includes(term)
+      );
+      setFilteredMentees(filtered);
+    }
+  };
+
   const handleDeleteAllMentees = async () => {
     const confirmDelete = window.confirm(
       "⚠️ Are you sure you want to delete all mentees? This action cannot be undone."
     );
     if (!confirmDelete) return;
-
     setDeleting(true);
     try {
       const token = localStorage.getItem("token");
@@ -67,6 +81,7 @@ export default function MentorDashboard() {
       });
       alert("✅ All mentees deleted successfully!");
       setMentees([]);
+      setFilteredMentees([]);
       setStats({ total: 0, pending: 0, resolved: 0 });
     } catch (err) {
       console.error("❌ Error deleting all mentees:", err);
@@ -76,170 +91,143 @@ export default function MentorDashboard() {
     }
   };
 
-  const handleDownloadPDF = () => {
-    if (mentees.length === 0) return alert("No mentees to export.");
+  // ✅ NEW: Backend-powered PDF report
+  const handleDownloadReport = async () => {
+    try {
+      const response = await API.get("/mentor/generate-report", {
+        responseType: "blob",
+      });
 
-    const doc = new jsPDF("p", "pt", "a4");
-    let yOffset = 60;
-
-    doc.setFont("helvetica", "bold");
-    doc.setFontSize(18);
-    doc.text("Mentor–Mentee Summary Report", 40, 40);
-    doc.setFontSize(12);
-    doc.setFont("helvetica", "normal");
-    doc.text(`Mentor: ${mentor?.name || "N/A"}`, 40, yOffset);
-    doc.text(`Date: ${new Date().toLocaleDateString()}`, 400, yOffset);
-    yOffset += 30;
-
-    doc.setDrawColor(56, 189, 248);
-    doc.line(40, yOffset, 550, yOffset);
-    yOffset += 25;
-
-    mentees.forEach((mentee, index) => {
-      doc.setFont("helvetica", "bold");
-      doc.setTextColor(56, 189, 248);
-      doc.setFontSize(13);
-      doc.text(`${index + 1}. ${mentee.name} (${mentee.rollNumber})`, 40, yOffset);
-
-      doc.setFont("helvetica", "normal");
-      doc.setFontSize(11);
-      doc.setTextColor(33, 37, 41);
-      doc.text(
-        `Department: ${mentee.department} | Year: ${mentee.year}`,
-        40,
-        yOffset + 16
-      );
-      yOffset += 30;
-
-      if (mentee.issues?.length > 0) {
-        const rows = mentee.issues.map((issue, i) => [
-          i + 1,
-          issue.description || "No description provided",
-          issue.status ? issue.status.toUpperCase() : "N/A",
-          new Date(issue.updatedAt || issue.createdAt).toLocaleString(),
-        ]);
-
-        autoTable(doc, {
-          startY: yOffset,
-          head: [["#", "Description", "Status", "Date"]],
-          body: rows,
-          theme: "grid",
-          headStyles: {
-            fillColor: [56, 189, 248],
-            textColor: 255,
-            fontStyle: "bold",
-            halign: "center",
-          },
-          styles: { fontSize: 10, cellPadding: 5 },
-          alternateRowStyles: { fillColor: [240, 247, 255] },
-          margin: { left: 40, right: 40 },
-        });
-
-        yOffset = doc.lastAutoTable.finalY + 25;
-      } else {
-        doc.setTextColor(120);
-        doc.text("No issues or remarks available.", 50, yOffset);
-        yOffset += 25;
-      }
-
-      if (yOffset > 700) {
-        doc.addPage();
-        yOffset = 60;
-      }
-    });
-
-    doc.save(`${mentor?.name || "Mentor"}_Mentee_Report.pdf`);
+      const blob = new Blob([response.data], { type: "application/pdf" });
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `${mentor?.name || "Mentor"}_Full_Mentee_Report.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+    } catch (error) {
+      console.error("❌ Error downloading report:", error);
+      alert("Failed to download report. Please try again.");
+    }
   };
 
   if (loading) {
     return (
-      <div className="d-flex justify-content-center align-items-center vh-100 bg-black text-white">
-        <h4 className="text-info">Loading Dashboard...</h4>
+      <div className="d-flex justify-content-center align-items-center vh-100 bg-dark text-light">
+        <div className="spinner-border text-info me-3"></div>
+        <h4>Loading Mentor Dashboard...</h4>
       </div>
     );
   }
 
   return (
-    <div className="min-vh-100">
+    <div
+      className="min-vh-100 fade-in"
+      style={{
+        background: "linear-gradient(135deg, #0f172a, #1e293b, #334155)",
+        color: "white",
+        overflowX: "hidden",
+      }}
+    >
       <Navbar mentor={mentor} />
 
-      <div className="container py-4">
-        {/* HEADER */}
+      <div className="container py-5">
+        {/* Header */}
         <div className="d-flex flex-wrap justify-content-between align-items-center mb-4">
-          <h2 className="fw-bold text-primary mb-3 mb-md-0">
-            Welcome, {mentor?.name || "Mentor"} 👋
+          <h2 className="fw-bold mb-3 mb-md-0">
+            👋 Welcome back, <span className="text-info">{mentor?.name}</span>
           </h2>
-
           <div className="d-flex gap-2">
             <button
-              className="btn add-mentee-btn fw-semibold shadow"
+              className="btn btn-success fw-semibold shadow-sm"
+              onClick={() => setShowBulkModal(true)}
+            >
+              <i className="bi bi-upload me-2"></i> Upload CSV
+            </button>
+            <button
+              className="btn btn-primary fw-semibold shadow-sm"
               onClick={() => setShowAddModal(true)}
             >
-              <i className="bi bi-person-plus-fill me-2"></i>
-              Add Mentee
+              <i className="bi bi-person-plus me-2"></i> Add Mentee
             </button>
-
             <button
-              className="btn btn-outline-primary fw-semibold shadow-sm"
-              onClick={handleDownloadPDF}
+              className="btn btn-outline-light fw-semibold shadow-sm"
+              onClick={handleDownloadReport}
             >
               <i className="bi bi-download me-2"></i> Download Report
             </button>
-
-            <button
-              className="btn btn-outline-success fw-semibold shadow-sm"
-              onClick={() => setShowBulkUpload(true)}
-            >
-              <i className="bi bi-file-earmark-spreadsheet-fill me-2"></i> Add via CSV
-            </button>
           </div>
         </div>
 
-        {/* STATS */}
-        <div className="row g-3 mb-4">
-          <div className="col-md-4">
-            <div className="card stat-card text-center p-4 rounded-4 shadow-sm">
-              <h5 className="stat-title mb-1">Total Mentees</h5>
-              <h2 className="stat-number">{stats.total}</h2>
+        {/* Stats */}
+        <div className="row g-4 mb-4">
+          {[
+            { label: "Total Mentees", value: stats.total, color: "#38bdf8" },
+            { label: "Pending Issues", value: stats.pending, color: "#f87171" },
+            { label: "Resolved", value: stats.resolved, color: "#4ade80" },
+          ].map((s, idx) => (
+            <div className="col-md-4" key={idx}>
+              <div
+                className="card border-0 shadow-sm text-center p-4 rounded-4"
+                style={{
+                  background: "rgba(255, 255, 255, 0.08)",
+                  backdropFilter: "blur(10px)",
+                  border: `1px solid ${s.color}`,
+                }}
+              >
+                <h6 style={{ color: s.color }}>{s.label}</h6>
+                <h2 className="fw-bold">{s.value}</h2>
+              </div>
             </div>
-          </div>
-
-          <div className="col-md-4">
-            <div className="card stat-card text-center p-4 rounded-4 shadow-sm border-danger">
-              <h5 className="stat-title text-danger mb-1">Pending</h5>
-              <h2 className="stat-number text-danger">{stats.pending}</h2>
-            </div>
-          </div>
-
-          <div className="col-md-4">
-            <div className="card stat-card text-center p-4 rounded-4 shadow-sm border-success">
-              <h5 className="stat-title text-success mb-1">Resolved</h5>
-              <h2 className="stat-number text-success">{stats.resolved}</h2>
-            </div>
-          </div>
+          ))}
         </div>
 
-        {/* TABLE */}
-        <div className="card stat-card border-0 p-4 rounded-4 shadow">
+        {/* Search Bar */}
+        <div className="d-flex justify-content-end mb-3">
+          <input
+            type="text"
+            placeholder="🔍 Search by name or roll number..."
+            className="form-control shadow-sm"
+            style={{
+              width: "350px",
+              borderRadius: "30px",
+              border: "1px solid #38bdf8",
+              background: "rgba(255,255,255,0.1)",
+              color: "white",
+            }}
+            value={searchTerm}
+            onChange={handleSearch}
+          />
+        </div>
+
+        {/* Mentee Table */}
+        <div
+          className="card border-0 rounded-4 shadow p-4"
+          style={{
+            background: "rgba(255, 255, 255, 0.05)",
+            backdropFilter: "blur(8px)",
+          }}
+        >
           <div className="d-flex justify-content-between align-items-center mb-3">
-            <h5 className="stat-title">Mentee List</h5>
+            <h5 className="fw-semibold text-info">📋 Mentee List</h5>
           </div>
 
-          {mentees.length > 0 ? (
-            <MenteeTable mentees={mentees} />
+          {filteredMentees.length > 0 ? (
+            <MenteeTable mentees={filteredMentees} />
           ) : (
-            <div className="text-center text-secondary py-4">
-              <i className="bi bi-person-lines-fill fs-1 mb-3 d-block"></i>
-              <p>No mentees added yet. Click “Add Mentee” or “Add via CSV”.</p>
+            <div className="text-center text-secondary py-5">
+              <i className="bi bi-person-x fs-1 mb-3 d-block"></i>
+              <p>No mentees found. Try a different search.</p>
             </div>
           )}
         </div>
 
-        {/* DELETE ALL */}
+        {/* Delete Button */}
         {mentees.length > 0 && (
           <div className="text-center mt-4">
             <button
-              className="btn btn-danger fw-semibold px-4 shadow-sm"
+              className="btn btn-danger px-4 py-2 rounded-3 fw-semibold shadow"
               onClick={handleDeleteAllMentees}
               disabled={deleting}
             >
@@ -249,17 +237,16 @@ export default function MentorDashboard() {
         )}
       </div>
 
-      {/* MODALS */}
+      {/* Modals */}
       <AddMenteeModal
         show={showAddModal}
         onClose={() => setShowAddModal(false)}
         onAdded={() => fetchMentees(localStorage.getItem("token"))}
       />
-
       <BulkUploadModal
-        show={showBulkUpload}
-        onClose={() => setShowBulkUpload(false)}
-        onUploaded={() => fetchMentees(localStorage.getItem("token"))} // ✅ fixes onUploaded error
+        show={showBulkModal}
+        onClose={() => setShowBulkModal(false)}
+        onUploaded={() => fetchMentees(localStorage.getItem("token"))}
       />
     </div>
   );

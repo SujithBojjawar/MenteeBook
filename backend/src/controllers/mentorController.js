@@ -1,6 +1,9 @@
 import Mentor from "../models/Mentor.js";
 import Mentee from "../models/Mentee.js";
 import Issue from "../models/Issue.js";
+import PDFDocument from "pdfkit";
+import moment from "moment";
+import stream from "stream";
 
 // ✅ Fetch all mentees for a mentor
 export const getAllMentees = async (req, res) => {
@@ -150,6 +153,7 @@ export const updateIssueStatus = async (req, res) => {
   }
 };
 
+// ✅ Add Bulk Mentees
 export const addBulkMentees = async (req, res) => {
   try {
     const { mentees } = req.body;
@@ -159,9 +163,7 @@ export const addBulkMentees = async (req, res) => {
       return res.status(400).json({ message: "No mentees provided" });
     }
 
-    // 🧹 Clean malformed values (remove quotes, spaces)
-    const clean = (v) =>
-      typeof v === "string" ? v.replace(/^"|"$/g, "").trim() : v;
+    const clean = (v) => (typeof v === "string" ? v.replace(/^"|"$/g, "").trim() : v);
 
     const validMentees = mentees
       .map((m) => ({
@@ -176,28 +178,21 @@ export const addBulkMentees = async (req, res) => {
       return res.status(400).json({ message: "No valid mentees found" });
     }
 
-    // ✅ Avoid duplicates for same mentor
     const existing = await Mentee.find({
       rollNumber: { $in: validMentees.map((m) => m.rollNumber) },
       mentorId,
     });
 
     const existingRolls = existing.map((m) => m.rollNumber);
-    const newMentees = validMentees.filter(
-      (m) => !existingRolls.includes(m.rollNumber)
-    );
+    const newMentees = validMentees.filter((m) => !existingRolls.includes(m.rollNumber));
 
     if (newMentees.length === 0) {
-      return res.status(400).json({
-        message: "All mentees already exist for this mentor",
-      });
+      return res.status(400).json({ message: "All mentees already exist for this mentor" });
     }
 
-    // ✅ Attach mentorId and insert
     const menteesWithMentor = newMentees.map((m) => ({ ...m, mentorId }));
     const inserted = await Mentee.insertMany(menteesWithMentor);
 
-    // ✅ Update Mentor list
     await Mentor.findByIdAndUpdate(mentorId, {
       $push: { mentees: inserted.map((m) => m._id) },
     });
@@ -209,9 +204,69 @@ export const addBulkMentees = async (req, res) => {
     });
   } catch (err) {
     console.error("❌ Error in addBulkMentees:", err);
-    res.status(500).json({
-      message: "Internal Server Error",
-      error: err.message,
+    res.status(500).json({ message: "Internal Server Error", error: err.message });
+  }
+};
+
+// 🆕 Generate full mentor report with mentees + followups
+export const generateMentorReport = async (req, res) => {
+  try {
+    const mentorId = req.user.id;
+    const mentor = await Mentor.findById(mentorId).populate({
+      path: "mentees",
+      populate: { path: "issues" },
     });
+
+    if (!mentor) {
+      return res.status(404).json({ message: "Mentor not found" });
+    }
+
+    const doc = new PDFDocument({ margin: 40 });
+    const chunks = [];
+    const passThrough = new stream.PassThrough();
+    doc.pipe(passThrough);
+
+    doc.fontSize(20).fillColor("#2563eb").text("Mentor–Mentee Report", { align: "center" });
+    doc.moveDown();
+    doc.fontSize(12).fillColor("black");
+    doc.text(`Mentor: ${mentor.name}`);
+    doc.text(`Generated On: ${moment().format("MMMM Do YYYY, h:mm:ss a")}`);
+    doc.moveDown();
+
+    if (!mentor.mentees.length) {
+      doc.fontSize(14).fillColor("#6b7280").text("No mentees found.", { align: "center" });
+    }
+
+    mentor.mentees.forEach((mentee, index) => {
+      doc.moveDown().fontSize(14).fillColor("#1e3a8a").text(`${index + 1}. ${mentee.name}`, { underline: true });
+      doc.fontSize(12).fillColor("black");
+      doc.text(`Roll Number: ${mentee.rollNumber}`);
+      doc.text(`Department: ${mentee.department}`);
+      doc.text(`Year: ${mentee.year}`);
+      doc.moveDown(0.5);
+
+      if (mentee.issues.length > 0) {
+        doc.fontSize(13).fillColor("#16a34a").text("Follow-ups / Issues:");
+        mentee.issues.forEach((issue, i) => {
+          doc.fontSize(11).fillColor("black").text(`  • (${i + 1}) ${issue.description} [${issue.status}]`);
+        });
+      } else {
+        doc.fontSize(11).fillColor("#6b7280").text("  No follow-ups yet.");
+      }
+
+      doc.moveDown(1).strokeColor("#94a3b8").lineWidth(0.5).moveTo(40, doc.y).lineTo(550, doc.y).stroke();
+    });
+
+    doc.end();
+    passThrough.on("data", (chunk) => chunks.push(chunk));
+    passThrough.on("end", () => {
+      const pdfBuffer = Buffer.concat(chunks);
+      res.setHeader("Content-Type", "application/pdf");
+      res.setHeader("Content-Disposition", `attachment; filename="${mentor.name}_Report.pdf"`);
+      res.send(pdfBuffer);
+    });
+  } catch (err) {
+    console.error("❌ Error generating report:", err);
+    res.status(500).json({ message: "Failed to generate report", error: err.message });
   }
 };
