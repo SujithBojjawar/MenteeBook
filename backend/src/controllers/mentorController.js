@@ -5,7 +5,6 @@ import PDFDocument from "pdfkit";
 import moment from "moment";
 import stream from "stream";
 
-// ✅ Fetch all mentees for a mentor
 export const getAllMentees = async (req, res) => {
   try {
     const mentorId = req.user.id;
@@ -17,7 +16,6 @@ export const getAllMentees = async (req, res) => {
   }
 };
 
-// ✅ Add single mentee
 export const addMentee = async (req, res) => {
   try {
     const mentorId = req.user.id;
@@ -54,7 +52,6 @@ export const addMentee = async (req, res) => {
   }
 };
 
-// ✅ Delete a single mentee
 export const deleteMentee = async (req, res) => {
   try {
     const mentorId = req.user.id;
@@ -70,7 +67,6 @@ export const deleteMentee = async (req, res) => {
   }
 };
 
-// ✅ Delete all mentees for a mentor
 export const deleteAllMentees = async (req, res) => {
   try {
     const mentorId = req.user.id;
@@ -101,7 +97,6 @@ export const deleteAllMentees = async (req, res) => {
   }
 };
 
-// ✅ Add an issue for a mentee
 export const addIssue = async (req, res) => {
   try {
     const { menteeId } = req.params;
@@ -127,7 +122,6 @@ export const addIssue = async (req, res) => {
   }
 };
 
-// ✅ Update issue status (pending / solved)
 export const updateIssueStatus = async (req, res) => {
   try {
     const { issueId } = req.params;
@@ -153,7 +147,6 @@ export const updateIssueStatus = async (req, res) => {
   }
 };
 
-// ✅ Add Bulk Mentees
 export const addBulkMentees = async (req, res) => {
   try {
     const { mentees } = req.body;
@@ -208,7 +201,7 @@ export const addBulkMentees = async (req, res) => {
   }
 };
 
-// 🆕 Generate full mentor report with mentees + followups
+
 export const generateMentorReport = async (req, res) => {
   try {
     const mentorId = req.user.id;
@@ -268,5 +261,57 @@ export const generateMentorReport = async (req, res) => {
   } catch (err) {
     console.error("❌ Error generating report:", err);
     res.status(500).json({ message: "Failed to generate report", error: err.message });
+  }
+};
+
+export const generateMenteeReport = async (req, res) => {
+  try {
+    const mentorId = req.user.id;
+    const { menteeId } = req.params;
+
+    const mentee = await Mentee.findOne({ _id: menteeId, mentorId }).populate("issues");
+
+    if (!mentee) {
+      return res.status(404).json({ message: "Mentee not found or not authorized" });
+    }
+
+    const doc = new PDFDocument({ margin: 40 });
+    const chunks = [];
+    const passThrough = new stream.PassThrough();
+    doc.pipe(passThrough);
+
+    doc.fontSize(20).fillColor("#2563eb").text("Individual Mentee Report", { align: "center" });
+    doc.moveDown();
+    doc.fontSize(12).fillColor("black");
+    doc.text(`Mentee Name: ${mentee.name}`);
+    doc.text(`Roll Number: ${mentee.rollNumber}`);
+    doc.text(`Department: ${mentee.department}`);
+    doc.text(`Year: ${mentee.year}`);
+    doc.text(`Generated On: ${new Date().toLocaleString()}`);
+    doc.moveDown();
+
+    if (mentee.issues.length > 0) {
+      doc.fontSize(13).fillColor("#16a34a").text("Follow-ups / Issues:");
+      mentee.issues.forEach((issue, i) => {
+        doc.fontSize(11).fillColor("black").text(`  • (${i + 1}) ${issue.description} [${issue.status}]`);
+      });
+    } else {
+      doc.fontSize(11).fillColor("#6b7280").text("No follow-ups or issues yet.");
+    }
+
+    doc.end();
+    passThrough.on("data", (chunk) => chunks.push(chunk));
+    passThrough.on("end", () => {
+      const pdfBuffer = Buffer.concat(chunks);
+      res.setHeader("Content-Type", "application/pdf");
+      res.setHeader(
+        "Content-Disposition",
+        `attachment; filename="${mentee.name}_Report.pdf"`
+      );
+      res.send(pdfBuffer);
+    });
+  } catch (err) {
+    console.error("❌ Error generating mentee report:", err);
+    res.status(500).json({ message: "Failed to generate mentee report", error: err.message });
   }
 };

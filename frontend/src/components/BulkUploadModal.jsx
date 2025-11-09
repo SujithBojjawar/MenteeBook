@@ -27,7 +27,6 @@ export default function BulkUploadModal({ show, onClose, onUploaded }) {
           let mentees = result.data.map((m) => {
             const raw = Object.values(m).join(" ").trim();
 
-            // 🧹 Handle bad CSVs where everything is in one column (like your case)
             const parts = raw.split(/[\s,]+/).filter(Boolean);
 
             if (parts.length >= 4) {
@@ -38,7 +37,7 @@ export default function BulkUploadModal({ show, onClose, onUploaded }) {
                 year: parts[parts.length - 1].replace(/"/g, "").trim(),
               };
             } else {
-              // Proper CSV (normal columns)
+              
               return {
                 rollNumber: m.rollNumber?.replace(/"/g, "").trim(),
                 name: m.name?.replace(/"/g, "").trim(),
@@ -48,7 +47,7 @@ export default function BulkUploadModal({ show, onClose, onUploaded }) {
             }
           });
 
-          // Remove invalid rows
+        
           mentees = mentees.filter(
             (m) => m.rollNumber && m.name && m.department && m.year
           );
@@ -67,7 +66,7 @@ export default function BulkUploadModal({ show, onClose, onUploaded }) {
           );
 
           alert("✅ Mentees uploaded successfully!");
-          onUploaded?.(); // ✅ only call if function exists
+          onUploaded?.(); 
           onClose();
         } catch (err) {
           console.error("❌ Error uploading mentees:", err);

@@ -2,6 +2,12 @@ import React from "react";
 import "../styles/theme.css";
 
 function Navbar({ mentor }) {
+  const handleLogout = () => {
+    localStorage.removeItem("token");
+    localStorage.removeItem("user");
+    window.location.href = "/login"; 
+  };
+
   return (
     <nav
       className="navbar navbar-expand-lg shadow-sm"
@@ -12,10 +18,10 @@ function Navbar({ mentor }) {
       }}
     >
       <div className="container-fluid px-4">
-        {}
+       
         <div className="d-flex align-items-center">
           <img
-            src="/src/assets/klh.png" 
+            src="/src/assets/klh.png"
             alt="KL University Logo"
             style={{
               height: "46px",
@@ -35,7 +41,6 @@ function Navbar({ mentor }) {
           </span>
         </div>
 
-        {}
         <div className="d-flex align-items-center gap-3">
           <div className="text-end me-2">
             <div className="fw-semibold username">
@@ -49,6 +54,7 @@ function Navbar({ mentor }) {
             </small>
           </div>
 
+      
           <button
             id="themeToggleBtn"
             className="btn btn-outline-primary rounded-circle d-flex align-items-center justify-content-center"
@@ -71,6 +77,20 @@ function Navbar({ mentor }) {
             }}
           >
             <i className="bi bi-moon-fill"></i>
+          </button>
+
+          <button
+            onClick={handleLogout}
+            className="btn btn-outline-info fw-semibold px-3 py-1 shadow-sm"
+            style={{
+              borderRadius: "25px",
+              fontSize: "0.9rem",
+              color: "#38bdf8",
+              borderColor: "#38bdf8",
+              background: "rgba(255,255,255,0.05)",
+            }}
+          >
+            <i className="bi bi-box-arrow-right me-1"></i> Logout
           </button>
         </div>
       </div>

@@ -29,8 +29,8 @@ export default function AddMenteeModal({ show, onClose, onAdded }) {
       );
 
       alert(`✅ Mentee "${res.data?.newMentee?.name || name}" added successfully!`);
-      onAdded(); // refresh list
-      onClose(); // close modal
+      onAdded(); 
+      onClose(); 
       setRollNumber("");
       setName("");
       setDepartment("CSE");
@@ -57,7 +57,7 @@ export default function AddMenteeModal({ show, onClose, onAdded }) {
         <h4 className="fw-bold suit-accent mb-3 text-center">Add New Mentee</h4>
 
         <form onSubmit={handleSubmit}>
-          {/* Roll Number */}
+       
           <div className="form-floating mb-3">
             <input
               type="text"
@@ -71,7 +71,6 @@ export default function AddMenteeModal({ show, onClose, onAdded }) {
             <label htmlFor="rollNumber">Roll Number</label>
           </div>
 
-          {/* Name */}
           <div className="form-floating mb-3">
             <input
               type="text"
@@ -85,7 +84,6 @@ export default function AddMenteeModal({ show, onClose, onAdded }) {
             <label htmlFor="name">Full Name</label>
           </div>
 
-          {/* Department */}
           <div className="form-floating mb-3">
             <select
               id="department"
@@ -101,7 +99,6 @@ export default function AddMenteeModal({ show, onClose, onAdded }) {
             <label htmlFor="department">Department</label>
           </div>
 
-          {/* Year */}
           <div className="form-floating mb-4">
             <select
               id="year"
@@ -118,7 +115,7 @@ export default function AddMenteeModal({ show, onClose, onAdded }) {
             <label htmlFor="year">Year</label>
           </div>
 
-          {/* Buttons */}
+       
           <div className="d-flex justify-content-end gap-3 mt-4">
             <button
               type="button"

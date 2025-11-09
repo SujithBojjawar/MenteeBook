@@ -91,7 +91,7 @@ export default function MentorDashboard() {
     }
   };
 
-  // ✅ NEW: Backend-powered PDF report
+
   const handleDownloadReport = async () => {
     try {
       const response = await API.get("/mentor/generate-report", {
@@ -133,7 +133,7 @@ export default function MentorDashboard() {
       <Navbar mentor={mentor} />
 
       <div className="container py-5">
-        {/* Header */}
+   
         <div className="d-flex flex-wrap justify-content-between align-items-center mb-4">
           <h2 className="fw-bold mb-3 mb-md-0">
             👋 Welcome back, <span className="text-info">{mentor?.name}</span>
@@ -160,7 +160,7 @@ export default function MentorDashboard() {
           </div>
         </div>
 
-        {/* Stats */}
+   
         <div className="row g-4 mb-4">
           {[
             { label: "Total Mentees", value: stats.total, color: "#38bdf8" },
@@ -183,7 +183,7 @@ export default function MentorDashboard() {
           ))}
         </div>
 
-        {/* Search Bar */}
+   
         <div className="d-flex justify-content-end mb-3">
           <input
             type="text"
@@ -201,7 +201,7 @@ export default function MentorDashboard() {
           />
         </div>
 
-        {/* Mentee Table */}
+
         <div
           className="card border-0 rounded-4 shadow p-4"
           style={{
@@ -223,7 +223,6 @@ export default function MentorDashboard() {
           )}
         </div>
 
-        {/* Delete Button */}
         {mentees.length > 0 && (
           <div className="text-center mt-4">
             <button
@@ -237,7 +236,7 @@ export default function MentorDashboard() {
         )}
       </div>
 
-      {/* Modals */}
+   
       <AddMenteeModal
         show={showAddModal}
         onClose={() => setShowAddModal(false)}
