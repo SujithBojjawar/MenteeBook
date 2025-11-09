@@ -1,5 +1,6 @@
 import React from "react";
 import "../styles/theme.css";
+import klhLogo from '../assets/klh.png';
 
 function Navbar({ mentor }) {
   const handleLogout = () => {
@@ -21,7 +22,7 @@ function Navbar({ mentor }) {
        
         <div className="d-flex align-items-center">
           <img
-            src="/src/assets/klh.png"
+            src={klhLogo}
             alt="KL University Logo"
             style={{
               height: "46px",
