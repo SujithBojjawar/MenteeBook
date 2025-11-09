@@ -8,7 +8,6 @@ export default function MenteeDetailsModal({ show, onClose, mentee, onUpdate }) 
   const [updatingIssueId, setUpdatingIssueId] = useState(null);
   const [adding, setAdding] = useState(false);
 
-  // ✅ Keep hook order consistent
   useEffect(() => {
     if (mentee) {
       setIssues(mentee.issues || []);
@@ -35,13 +34,11 @@ export default function MenteeDetailsModal({ show, onClose, mentee, onUpdate }) 
     }
   };
 
-  // 🔹 Mark pending issue as solved (instant update)
   const handleMarkSolved = async (issueId) => {
     setUpdatingIssueId(issueId);
     try {
       await API.put(`/mentor/update-issue/${issueId}`, { status: "solved" });
 
-      // Show feedback for 1.5 seconds before updating
       setTimeout(() => {
         setIssues((prev) =>
           prev.map((issue) =>
@@ -49,7 +46,7 @@ export default function MenteeDetailsModal({ show, onClose, mentee, onUpdate }) 
           )
         );
         setUpdatingIssueId(null);
-        onUpdate(); // refresh dashboard stats
+        onUpdate(); 
       }, 1500);
     } catch (err) {
       console.error("❌ Error marking issue as solved:", err);
@@ -58,7 +55,6 @@ export default function MenteeDetailsModal({ show, onClose, mentee, onUpdate }) 
     }
   };
 
-  // 🔹 Download individual mentee report (fixed route)
   const handleDownloadReport = async () => {
     try {
       const token = localStorage.getItem("token");
@@ -101,7 +97,7 @@ export default function MenteeDetailsModal({ show, onClose, mentee, onUpdate }) 
             boxShadow: "0 0 20px rgba(56,189,248,0.4)",
           }}
         >
-          {/* ---------- Header ---------- */}
+      
           <div className="d-flex justify-content-between align-items-center mb-3">
             <h5 className="fw-bold text-info">
               {mentee.name} — {mentee.rollNumber}
@@ -111,7 +107,7 @@ export default function MenteeDetailsModal({ show, onClose, mentee, onUpdate }) 
             </button>
           </div>
 
-          {/* ---------- Basic Info ---------- */}
+
           <p className="mb-1">
             <strong>Department:</strong> {mentee.department}
           </p>
@@ -119,7 +115,7 @@ export default function MenteeDetailsModal({ show, onClose, mentee, onUpdate }) 
             <strong>Year:</strong> {mentee.year}
           </p>
 
-          {/* ---------- Follow-ups Section ---------- */}
+  
           <h6 className="text-info mt-4 mb-2">
             <i className="bi bi-clock-history me-2"></i> Follow-ups Timeline
           </h6>
@@ -180,7 +176,7 @@ export default function MenteeDetailsModal({ show, onClose, mentee, onUpdate }) 
             <p className="text-muted">No follow-ups yet for this mentee.</p>
           )}
 
-          {/* ---------- Add New Follow-up ---------- */}
+
           <h6 className="text-info mt-3">
             <i className="bi bi-plus-circle me-2"></i> Add New Follow-up
           </h6>
@@ -192,7 +188,6 @@ export default function MenteeDetailsModal({ show, onClose, mentee, onUpdate }) 
             onChange={(e) => setNewIssue(e.target.value)}
           ></textarea>
 
-          {/* ---------- Footer Buttons ---------- */}
           <div className="d-flex justify-content-between mt-4">
             <button className="btn btn-outline-light px-4" onClick={onClose}>
               Close
