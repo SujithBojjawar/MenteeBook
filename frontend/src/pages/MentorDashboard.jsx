@@ -24,6 +24,7 @@ export default function MentorDashboard() {
     if (token && user) fetchMentees(token);
   }, []);
 
+  // ✅ Fetch all mentees
   const fetchMentees = async (token) => {
     try {
       const res = await API.get("/mentor/mentees", {
@@ -54,6 +55,7 @@ export default function MentorDashboard() {
     }
   };
 
+  // ✅ Search mentees by name or roll number
   const handleSearch = (e) => {
     const term = e.target.value.toLowerCase();
     setSearchTerm(term);
@@ -68,6 +70,25 @@ export default function MentorDashboard() {
     }
   };
 
+  // ✅ Delete individual mentee
+  const handleDeleteMentee = async (menteeId) => {
+    const confirmDelete = window.confirm("⚠️ Are you sure you want to delete this mentee?");
+    if (!confirmDelete) return;
+
+    try {
+      const token = localStorage.getItem("token");
+      await API.delete(`/mentor/delete-mentee/${menteeId}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      alert("✅ Mentee deleted successfully!");
+      fetchMentees(token);
+    } catch (err) {
+      console.error("❌ Error deleting mentee:", err);
+      alert("Failed to delete mentee. Try again!");
+    }
+  };
+
+  // ✅ Delete all mentees
   const handleDeleteAllMentees = async () => {
     const confirmDelete = window.confirm(
       "⚠️ Are you sure you want to delete all mentees? This action cannot be undone."
@@ -91,7 +112,7 @@ export default function MentorDashboard() {
     }
   };
 
-
+  // ✅ Download full mentor report
   const handleDownloadReport = async () => {
     try {
       const response = await API.get("/mentor/generate-report", {
@@ -133,7 +154,7 @@ export default function MentorDashboard() {
       <Navbar mentor={mentor} />
 
       <div className="container py-5">
-   
+        {/* Header */}
         <div className="d-flex flex-wrap justify-content-between align-items-center mb-4">
           <h2 className="fw-bold mb-3 mb-md-0">
             👋 Welcome back, <span className="text-info">{mentor?.name}</span>
@@ -160,7 +181,7 @@ export default function MentorDashboard() {
           </div>
         </div>
 
-   
+        {/* Stats Section */}
         <div className="row g-4 mb-4">
           {[
             { label: "Total Mentees", value: stats.total, color: "#38bdf8" },
@@ -183,7 +204,7 @@ export default function MentorDashboard() {
           ))}
         </div>
 
-   
+        {/* Search */}
         <div className="d-flex justify-content-end mb-3">
           <input
             type="text"
@@ -201,7 +222,7 @@ export default function MentorDashboard() {
           />
         </div>
 
-
+        {/* Mentee Table */}
         <div
           className="card border-0 rounded-4 shadow p-4"
           style={{
@@ -214,7 +235,7 @@ export default function MentorDashboard() {
           </div>
 
           {filteredMentees.length > 0 ? (
-            <MenteeTable mentees={filteredMentees} />
+            <MenteeTable mentees={filteredMentees} onDelete={handleDeleteMentee} />
           ) : (
             <div className="text-center text-secondary py-5">
               <i className="bi bi-person-x fs-1 mb-3 d-block"></i>
@@ -223,6 +244,7 @@ export default function MentorDashboard() {
           )}
         </div>
 
+        {/* Delete All Button */}
         {mentees.length > 0 && (
           <div className="text-center mt-4">
             <button
@@ -236,7 +258,7 @@ export default function MentorDashboard() {
         )}
       </div>
 
-   
+      {/* Modals */}
       <AddMenteeModal
         show={showAddModal}
         onClose={() => setShowAddModal(false)}
