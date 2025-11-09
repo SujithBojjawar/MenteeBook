@@ -1,13 +1,10 @@
-import React, { useState } from "react";
-import MenteeDetailsModal from "./MenteeDetailsModal";
+import React from "react";
 
-export default function MenteeTable({ mentees, onDelete }) {
-  const [selectedMentee, setSelectedMentee] = useState(null);
-
+export default function MenteeTable({ mentees, onView, onDelete }) {
   return (
-    <div className="table-responsive mentee-table-container">
-      <table className="table table-hover align-middle text-center mb-0 mentee-table shadow-sm">
-        <thead className="table-light">
+    <div className="table-responsive">
+      <table className="table table-dark table-hover align-middle text-center">
+        <thead>
           <tr>
             <th>#</th>
             <th>Roll No</th>
@@ -19,62 +16,34 @@ export default function MenteeTable({ mentees, onDelete }) {
           </tr>
         </thead>
         <tbody>
-          {mentees?.length > 0 ? (
-            mentees.map((mentee, index) => {
-              const latestIssue =
-                mentee.issues?.length > 0
-                  ? mentee.issues[mentee.issues.length - 1]
-                  : null;
-
-              const statusClass = latestIssue
-                ? latestIssue.status.toLowerCase()
-                : "normal";
-
-              return (
-                <tr key={mentee._id}>
-                  <td>{index + 1}</td>
-                  <td className="fw-semibold">{mentee.rollNumber}</td>
-                  <td>{mentee.name}</td>
-                  <td>{mentee.department}</td>
-                  <td>{mentee.year}</td>
-                  <td className={`status-cell ${statusClass}`}>
-                    {latestIssue ? latestIssue.status.toUpperCase() : "NORMAL"}
-                  </td>
-                  <td>
-                    <button
-                      className="btn btn-sm btn-outline-primary me-2"
-                      onClick={() => setSelectedMentee(mentee)}
-                    >
-                      <i className="bi bi-eye-fill"></i> View
-                    </button>
-                    <button
-                      className="btn btn-sm btn-outline-danger"
-                      onClick={() => onDelete(mentee._id)}
-                    >
-                      <i className="bi bi-trash3-fill"></i> Delete
-                    </button>
-                  </td>
-                </tr>
-              );
-            })
-          ) : (
-            <tr>
-              <td colSpan="7" className="py-4 text-muted">
-                No mentees yet ✨
+          {mentees.map((mentee, index) => (
+            <tr key={mentee._id}>
+              <td>{index + 1}</td>
+              <td className="fw-semibold text-info">{mentee.rollNumber}</td>
+              <td>{mentee.name}</td>
+              <td>{mentee.department}</td>
+              <td>{mentee.year}</td>
+              <td className={mentee.issues?.some(i => i.status === "pending") ? "text-warning fw-bold" : "text-success fw-bold"}>
+                {mentee.issues?.some(i => i.status === "pending") ? "PENDING" : "NORMAL"}
+              </td>
+              <td>
+                <button
+                  className="btn btn-sm btn-info me-2"
+                  onClick={() => onView(mentee)}
+                >
+                  <i className="bi bi-eye"></i> View
+                </button>
+                <button
+                  className="btn btn-sm btn-danger"
+                  onClick={() => onDelete(mentee._id)}
+                >
+                  <i className="bi bi-trash"></i> Delete
+                </button>
               </td>
             </tr>
-          )}
+          ))}
         </tbody>
       </table>
-
-      {selectedMentee && (
-        <MenteeDetailsModal
-          show={!!selectedMentee}
-          onClose={() => setSelectedMentee(null)}
-          mentee={selectedMentee}
-          onUpdate={() => window.location.reload()}
-        />
-      )}
     </div>
   );
 }
