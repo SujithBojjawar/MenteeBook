@@ -8,7 +8,7 @@ export default function MenteeDetailsModal({ show, onClose, mentee, onUpdate }) 
   const [updatingIssueId, setUpdatingIssueId] = useState(null);
   const [adding, setAdding] = useState(false);
 
-  // ✅ Always call hooks first — never inside a conditional
+  // ✅ Keep hook order consistent
   useEffect(() => {
     if (mentee) {
       setIssues(mentee.issues || []);
@@ -35,13 +35,13 @@ export default function MenteeDetailsModal({ show, onClose, mentee, onUpdate }) 
     }
   };
 
-  // 🔹 Mark pending issue as solved (instant UI update)
+  // 🔹 Mark pending issue as solved (instant update)
   const handleMarkSolved = async (issueId) => {
     setUpdatingIssueId(issueId);
     try {
       await API.put(`/mentor/update-issue/${issueId}`, { status: "solved" });
 
-      // Small delay for smooth UX
+      // Show feedback for 1.5 seconds before updating
       setTimeout(() => {
         setIssues((prev) =>
           prev.map((issue) =>
@@ -49,7 +49,7 @@ export default function MenteeDetailsModal({ show, onClose, mentee, onUpdate }) 
           )
         );
         setUpdatingIssueId(null);
-        onUpdate(); // refresh dashboard
+        onUpdate(); // refresh dashboard stats
       }, 1500);
     } catch (err) {
       console.error("❌ Error marking issue as solved:", err);
@@ -58,11 +58,15 @@ export default function MenteeDetailsModal({ show, onClose, mentee, onUpdate }) 
     }
   };
 
+  // 🔹 Download individual mentee report (fixed route)
   const handleDownloadReport = async () => {
     try {
-      const response = await API.get(`/mentor/mentee-report/${mentee._id}`, {
+      const token = localStorage.getItem("token");
+      const response = await API.get(`/mentor/generate-report/${mentee._id}`, {
         responseType: "blob",
+        headers: { Authorization: `Bearer ${token}` },
       });
+
       const blob = new Blob([response.data], { type: "application/pdf" });
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement("a");
@@ -71,9 +75,10 @@ export default function MenteeDetailsModal({ show, onClose, mentee, onUpdate }) 
       document.body.appendChild(a);
       a.click();
       a.remove();
+      window.URL.revokeObjectURL(url);
     } catch (err) {
       console.error("❌ Error downloading mentee report:", err);
-      alert("Failed to download report.");
+      alert("Failed to download mentee report. Please try again.");
     }
   };
 
@@ -96,6 +101,7 @@ export default function MenteeDetailsModal({ show, onClose, mentee, onUpdate }) 
             boxShadow: "0 0 20px rgba(56,189,248,0.4)",
           }}
         >
+          {/* ---------- Header ---------- */}
           <div className="d-flex justify-content-between align-items-center mb-3">
             <h5 className="fw-bold text-info">
               {mentee.name} — {mentee.rollNumber}
@@ -105,6 +111,7 @@ export default function MenteeDetailsModal({ show, onClose, mentee, onUpdate }) 
             </button>
           </div>
 
+          {/* ---------- Basic Info ---------- */}
           <p className="mb-1">
             <strong>Department:</strong> {mentee.department}
           </p>
@@ -112,6 +119,7 @@ export default function MenteeDetailsModal({ show, onClose, mentee, onUpdate }) 
             <strong>Year:</strong> {mentee.year}
           </p>
 
+          {/* ---------- Follow-ups Section ---------- */}
           <h6 className="text-info mt-4 mb-2">
             <i className="bi bi-clock-history me-2"></i> Follow-ups Timeline
           </h6>
@@ -146,9 +154,14 @@ export default function MenteeDetailsModal({ show, onClose, mentee, onUpdate }) 
               >
                 <div className="d-flex justify-content-between align-items-center">
                   <span>
-                    {updatingIssueId === issue._id
-                      ? "⏳ Marking as solved..."
-                      : issue.description}
+                    {updatingIssueId === issue._id ? (
+                      <span>
+                        <i className="bi bi-hourglass-split me-2 text-warning"></i>
+                        Marking as solved...
+                      </span>
+                    ) : (
+                      issue.description
+                    )}
                   </span>
                   <span
                     className={`badge ${
@@ -167,6 +180,7 @@ export default function MenteeDetailsModal({ show, onClose, mentee, onUpdate }) 
             <p className="text-muted">No follow-ups yet for this mentee.</p>
           )}
 
+          {/* ---------- Add New Follow-up ---------- */}
           <h6 className="text-info mt-3">
             <i className="bi bi-plus-circle me-2"></i> Add New Follow-up
           </h6>
@@ -178,6 +192,7 @@ export default function MenteeDetailsModal({ show, onClose, mentee, onUpdate }) 
             onChange={(e) => setNewIssue(e.target.value)}
           ></textarea>
 
+          {/* ---------- Footer Buttons ---------- */}
           <div className="d-flex justify-content-between mt-4">
             <button className="btn btn-outline-light px-4" onClick={onClose}>
               Close
