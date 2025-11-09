@@ -1,19 +1,21 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import API from "../services/api";
 import "../styles/theme.css";
 
 export default function MenteeDetailsModal({ show, onClose, mentee, onUpdate }) {
   const [newIssue, setNewIssue] = useState("");
-  const [issues, setIssues] = useState(mentee?.issues || []);
+  const [issues, setIssues] = useState([]);
   const [updatingIssueId, setUpdatingIssueId] = useState(null);
   const [adding, setAdding] = useState(false);
 
-  if (!mentee) return null;
-
-  // Sync issues if mentee changes
-  React.useEffect(() => {
-    setIssues(mentee?.issues || []);
+  // ✅ Always call hooks first — never inside a conditional
+  useEffect(() => {
+    if (mentee) {
+      setIssues(mentee.issues || []);
+    }
   }, [mentee]);
+
+  if (!mentee) return null;
 
   // 🔹 Add new follow-up (refresh + close modal)
   const handleAddIssue = async () => {
@@ -23,8 +25,8 @@ export default function MenteeDetailsModal({ show, onClose, mentee, onUpdate }) 
       await API.post(`/mentor/add-issue/${mentee._id}`, { description: newIssue });
       alert("✅ Issue added successfully!");
       setNewIssue("");
-      onUpdate(); // Refresh dashboard data
-      onClose(); // Close modal
+      onUpdate(); // refresh dashboard data
+      onClose(); // close modal automatically
     } catch (err) {
       console.error("❌ Error adding issue:", err);
       alert("Failed to add issue.");
@@ -37,12 +39,10 @@ export default function MenteeDetailsModal({ show, onClose, mentee, onUpdate }) 
   const handleMarkSolved = async (issueId) => {
     setUpdatingIssueId(issueId);
     try {
-      // Update in DB
       await API.put(`/mentor/update-issue/${issueId}`, { status: "solved" });
 
-      // Wait 1.5–2 seconds to show feedback
+      // Small delay for smooth UX
       setTimeout(() => {
-        // Update in local state (UI)
         setIssues((prev) =>
           prev.map((issue) =>
             issue._id === issueId ? { ...issue, status: "solved" } : issue
@@ -130,10 +130,7 @@ export default function MenteeDetailsModal({ show, onClose, mentee, onUpdate }) 
                     issue.status === "pending" && !updatingIssueId
                       ? "pointer"
                       : "default",
-                  opacity:
-                    updatingIssueId === issue._id
-                      ? 0.6
-                      : 1,
+                  opacity: updatingIssueId === issue._id ? 0.6 : 1,
                   transition: "all 0.3s ease",
                 }}
                 onClick={() =>
