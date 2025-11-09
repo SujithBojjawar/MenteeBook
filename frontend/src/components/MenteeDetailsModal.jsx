@@ -4,18 +4,57 @@ import "../styles/theme.css";
 
 export default function MenteeDetailsModal({ show, onClose, mentee, onUpdate }) {
   const [newIssue, setNewIssue] = useState("");
+  const [issues, setIssues] = useState(mentee?.issues || []);
+  const [updatingIssueId, setUpdatingIssueId] = useState(null);
+  const [adding, setAdding] = useState(false);
 
   if (!mentee) return null;
 
+  // Sync issues if mentee changes
+  React.useEffect(() => {
+    setIssues(mentee?.issues || []);
+  }, [mentee]);
+
+  // 🔹 Add new follow-up (refresh + close modal)
   const handleAddIssue = async () => {
     if (!newIssue.trim()) return alert("Please enter a follow-up message!");
+    setAdding(true);
     try {
       await API.post(`/mentor/add-issue/${mentee._id}`, { description: newIssue });
+      alert("✅ Issue added successfully!");
       setNewIssue("");
-      onUpdate();
+      onUpdate(); // Refresh dashboard data
+      onClose(); // Close modal
     } catch (err) {
       console.error("❌ Error adding issue:", err);
       alert("Failed to add issue.");
+    } finally {
+      setAdding(false);
+    }
+  };
+
+  // 🔹 Mark pending issue as solved (instant UI update)
+  const handleMarkSolved = async (issueId) => {
+    setUpdatingIssueId(issueId);
+    try {
+      // Update in DB
+      await API.put(`/mentor/update-issue/${issueId}`, { status: "solved" });
+
+      // Wait 1.5–2 seconds to show feedback
+      setTimeout(() => {
+        // Update in local state (UI)
+        setIssues((prev) =>
+          prev.map((issue) =>
+            issue._id === issueId ? { ...issue, status: "solved" } : issue
+          )
+        );
+        setUpdatingIssueId(null);
+        onUpdate(); // refresh dashboard
+      }, 1500);
+    } catch (err) {
+      console.error("❌ Error marking issue as solved:", err);
+      alert("Failed to mark issue as solved.");
+      setUpdatingIssueId(null);
     }
   };
 
@@ -24,7 +63,6 @@ export default function MenteeDetailsModal({ show, onClose, mentee, onUpdate }) 
       const response = await API.get(`/mentor/mentee-report/${mentee._id}`, {
         responseType: "blob",
       });
-
       const blob = new Blob([response.data], { type: "application/pdf" });
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement("a");
@@ -49,12 +87,7 @@ export default function MenteeDetailsModal({ show, onClose, mentee, onUpdate }) 
         zIndex: 9999,
       }}
     >
-      <div
-        className="modal-dialog modal-dialog-centered"
-        style={{
-          maxWidth: "700px",
-        }}
-      >
+      <div className="modal-dialog modal-dialog-centered" style={{ maxWidth: "700px" }}>
         <div
           className="modal-content p-4 rounded-4 shadow-lg text-light"
           style={{
@@ -82,8 +115,9 @@ export default function MenteeDetailsModal({ show, onClose, mentee, onUpdate }) 
           <h6 className="text-info mt-4 mb-2">
             <i className="bi bi-clock-history me-2"></i> Follow-ups Timeline
           </h6>
-          {mentee.issues?.length > 0 ? (
-            mentee.issues.map((issue, i) => (
+
+          {issues?.length > 0 ? (
+            issues.map((issue, i) => (
               <div
                 key={i}
                 className="p-3 rounded mb-2"
@@ -92,10 +126,33 @@ export default function MenteeDetailsModal({ show, onClose, mentee, onUpdate }) 
                   borderLeft: `4px solid ${
                     issue.status === "pending" ? "#fbbf24" : "#4ade80"
                   }`,
+                  cursor:
+                    issue.status === "pending" && !updatingIssueId
+                      ? "pointer"
+                      : "default",
+                  opacity:
+                    updatingIssueId === issue._id
+                      ? 0.6
+                      : 1,
+                  transition: "all 0.3s ease",
                 }}
+                onClick={() =>
+                  issue.status === "pending" &&
+                  !updatingIssueId &&
+                  handleMarkSolved(issue._id)
+                }
+                title={
+                  issue.status === "pending"
+                    ? "Click to mark as solved"
+                    : "Already solved"
+                }
               >
                 <div className="d-flex justify-content-between align-items-center">
-                  <span>{issue.description}</span>
+                  <span>
+                    {updatingIssueId === issue._id
+                      ? "⏳ Marking as solved..."
+                      : issue.description}
+                  </span>
                   <span
                     className={`badge ${
                       issue.status === "pending" ? "bg-warning" : "bg-success"
@@ -129,10 +186,17 @@ export default function MenteeDetailsModal({ show, onClose, mentee, onUpdate }) 
               Close
             </button>
             <div className="d-flex gap-2">
-              <button className="btn btn-info px-4" onClick={handleAddIssue}>
-                Add Issue
+              <button
+                className="btn btn-info px-4"
+                onClick={handleAddIssue}
+                disabled={adding}
+              >
+                {adding ? "Adding..." : "Add Issue"}
               </button>
-              <button className="btn btn-outline-info px-4" onClick={handleDownloadReport}>
+              <button
+                className="btn btn-outline-info px-4"
+                onClick={handleDownloadReport}
+              >
                 <i className="bi bi-download me-2"></i> Download Report
               </button>
             </div>
